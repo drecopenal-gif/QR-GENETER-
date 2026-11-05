@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pro UPI QR Studio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050508;
+  --card: rgba(18, 19, 28, 0.78);
+  --border: rgba(255, 255, 255, 0.1);
+  --accent: #8b5cf6;
+  --accent2: #06b6d4;
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --success: #10b981;
+  --amber: #f59e0b;
+  --danger: #ef4444;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Plus Jakarta Sans', sans-serif; }
+body {
+  background: var(--bg); color: var(--text); min-height: 100vh;
+  display: flex; justify-content: center; align-items: center;
+  padding: 18px; overflow-x: hidden; user-select: none; position: relative;
+}
+body::before, body::after {
+  content: ''; position: fixed; width: 320px; height: 320px; border-radius: 50%;
+  filter: blur(110px); z-index: 0; opacity: 0.45; pointer-events: none;
+}
+body::before { background: var(--accent); top: -80px; left: -80px; animation: float 8s infinite alternate; }
+body::after { background: var(--accent2); bottom: -80px; right: -80px; animation: float 10s infinite alternate-reverse; }
+@keyframes float { 0% { transform: scale(1) translate(0, 0); } 100% { transform: scale(1.15) translate(20px, 20px); } }
+
+.container { width: 100%; max-width: 420px; position: relative; z-index: 10; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.logo-badge {
+  width: 38px; height: 38px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; justify-content: center; align-items: center; font-weight: 800; font-size: 18px;
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.35);
+}
+.header h1 { font-size: 21px; font-weight: 800; letter-spacing: -0.5px; }
+.header h1 span { background: linear-gradient(135deg, #c4b5fd, #67e8f9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.top-actions { display: flex; gap: 8px; }
+.icon-btn {
+  background: var(--card); border: 1px solid var(--border); color: var(--text);
+  width: 42px; height: 42px; border-radius: 13px; cursor: pointer;
+  display: flex; justify-content: center; align-items: center; font-size: 17px;
+  transition: all 0.2s; backdrop-filter: blur(16px);
+}
+.icon-btn:active { transform: scale(0.88); border-color: var(--accent); }
+
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 26px;
+  padding: 24px; backdrop-filter: blur(28px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255,255,255,0.1);
+  margin-bottom: 16px; position: relative; overflow: hidden;
+}
+label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.1px; margin-bottom: 8px; font-weight: 700; }
+.input-group { margin-bottom: 16px; }
+input, select {
+  width: 100%; background: rgba(0, 0, 0, 0.45); border: 1px solid var(--border);
+  border-radius: 15px; padding: 15px 16px; color: var(--text); font-size: 16px;
+  outline: none; transition: all 0.25s; font-weight: 600;
+}
+#amountInput { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: 0.5px; }
+input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.18); transform: translateY(-1px); }
+
+.chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; }
+.chip {
+  background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); color: #cbd5e1;
+  padding: 9px 0; border-radius: 11px; font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s; text-align: center;
+}
+.chip:active { transform: scale(0.92); background: rgba(139, 92, 246, 0.2); border-color: var(--accent); color: #fff; }
+
+.toggle-row {
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+  padding: 12px 14px; border-radius: 14px; margin-bottom: 18px; cursor: pointer;
+}
+.toggle-info { font-size: 13px; font-weight: 700; }
+.toggle-info small { display: block; font-size: 11px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+.switch { width: 44px; height: 24px; background: #334155; border-radius: 20px; position: relative; transition: 0.3s; }
+.switch::after { content: ''; width: 18px; height: 18px; background: #fff; border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: 0.3s; }
+.switch.on { background: var(--success); }
+.switch.on::after { left: 23px; }
+
+.btn {
+  width: 100%; padding: 15px; border: none; border-radius: 15px; font-size: 14px;
+  font-weight: 800; cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+  letter-spacing: 0.7px; display: flex; justify-content: center; align-items: center; gap: 8px;
+}
+.btn:active { transform: scale(0.96); }
+.btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; box-shadow: 0 10px 25px rgba(139, 92, 246, 0.35); }
+.btn-download { background: linear-gradient(135deg, #10b981, #059669); color: #042f2e; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3); }
+.btn-link { background: linear-gradient(135deg, #f59e0b, #d97706); color: #1e1300; margin-top: 10px; box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3); }
+.btn-sec { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border); margin-top: 10px; }
+
+#qrContainer { display: none; flex-direction: column; align-items: center; text-align: center; animation: fadeIn 0.35s ease; }
+#qrContainer.active { display: flex; }
+.qr-box { background: #fff; padding: 18px; border-radius: 22px; margin: 10px 0 14px; box-shadow: 0 0 35px rgba(139, 92, 246, 0.35); }
+.amount-badge { font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 2px; }
+.merchant-badge { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+.token-pill { font-size: 11px; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 5px 12px; border-radius: 20px; font-weight: 700; margin-bottom: 8px; border: 1px solid rgba(16,185,129,0.3); }
+.link-preview { width: 100%; font-size: 11px; color: #fcd34d; background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.35); padding: 9px 12px; border-radius: 12px; margin-top: 10px; word-break: break-all; text-align: left; }
+
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.82); display: none; justify-content: center; align-items: center; z-index: 100; padding: 20px; backdrop-filter: blur(12px); }
+.modal.active { display: flex; animation: fadeIn 0.25s; }
+.modal-content { background: #111218; border: 1px solid var(--border); border-radius: 24px; padding: 22px; width: 100%; max-width: 400px; max-height: 88vh; overflow-y: auto; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.upi-list { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 14px; }
+.upi-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.04); border-radius: 13px; margin-bottom: 8px; border: 1px solid var(--border); }
+.upi-item .info { font-size: 14px; font-weight: 700; }
+.upi-item .info span { display: block; font-size: 11px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+.del-btn { background: rgba(239,68,68,0.18); color: #f87171; border: 1px solid rgba(239,68,68,0.3); padding: 7px 12px; border-radius: 9px; cursor: pointer; font-weight: 700; font-size: 12px; }
+
+#toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px);
+  background: #1e1b4b; border: 1px solid var(--accent); color: #fff; padding: 12px 20px;
+  border-radius: 14px; font-size: 13px; font-weight: 700; z-index: 999; transition: 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: none; white-space: nowrap;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<div id="toast">Notification</div>
+
+<div class="container">
+  <div class="header">
+    <div class="brand">
+      <div class="logo-badge">₹</div>
+      <h1>UPI <span>Pro Studio</span></h1>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="soundToggle" title="Sound & Haptics">🔊</button>
+      <button class="icon-btn" id="adminBtn" title="Manage UPI IDs">⚙️</button>
+    </div>
+  </div>
+
+  <!-- Main Input Card -->
+  <div class="card" id="mainCard">
+    <div class="input-group">
+      <label><span>Enter Amount (₹)</span> <span id="clearAmt" style="color:var(--accent2);cursor:pointer;">CLEAR</span></label>
+      <input type="number" id="amountInput" placeholder="0.00" step="0.01" min="1" inputmode="decimal">
+    </div>
+
+    <div class="chips">
+      <div class="chip" onclick="addQuickAmount(50)">+₹50</div>
+      <div class="chip" onclick="addQuickAmount(100)">+₹100</div>
+      <div class="chip" onclick="addQuickAmount(500)">+₹500</div>
+      <div class="chip" onclick="addQuickAmount(1000)">+₹1000</div>
+    </div>
+
+    <div class="input-group">
+      <label>Select Receiver UPI</label>
+      <select id="upiSelect"></select>
+    </div>
+
+    <div class="input-group">
+      <label>Payment Note (Optional)</label>
+      <input type="text" id="noteInput" placeholder="e.g. Order / VIP Access" maxlength="35">
+    </div>
+
+    <div class="toggle-row" id="safeModeToggle">
+      <div class="toggle-info">
+        🛡️ Anti-Block Safe Mode
+        <small>4-5+ payments pachi aavti bank error rokva mate</small>
+      </div>
+      <div class="switch on" id="safeSwitch"></div>
+    </div>
+
+    <button class="btn btn-primary" id="genBtn">⚡ Generate Smart QR</button>
+  </div>
+
+  <!-- QR Display Card -->
+  <div class="card" id="qrContainer">
+    <div class="merchant-badge" id="displayMerchant">Store Name</div>
+    <div class="amount-badge" id="displayAmount">₹0.00</div>
+    <div class="token-pill" id="displayToken">✓ Anti-Block Active</div>
+
+    <div class="qr-box">
+      <div id="qrcode"></div>
+    </div>
+
+    <button class="btn btn-download" id="downloadBtn">📥 Download HD QR Poster</button>
+    
+    <!-- NEW: Get Auto-Refreshing QR Link Button for Payment Gateway -->
+    <button class="btn btn-link" id="copyAutoLinkBtn">🔗 Get Auto-Refreshing QR Link</button>
+    <div class="link-preview" id="autoLinkPreview"></div>
+
+    <button class="btn btn-sec" id="refreshQrBtn">🔄 Refresh QR (New User Mate)</button>
+    <button class="btn" id="backBtn" style="margin-top:6px;background:transparent;color:var(--muted);">← Edit Amount</button>
+  </div>
+</div>
+
+<!-- Admin Modal -->
+<div class="modal" id="adminModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 style="font-size:18px;font-weight:800;">⚙️ Manage UPI Accounts</h2>
+      <button class="icon-btn" id="closeAdmin" style="width:34px;height:34px;">✕</button>
+    </div>
+    <div class="input-group">
+      <label>Business / Receiver Name</label>
+      <input type="text" id="newName" placeholder="e.g. PayQuick Store">
+    </div>
+    <div class="input-group">
+      <label>UPI ID (Normal or Merchant)</label>
+      <input type="text" id="newUpi" placeholder="e.g. name@okaxis">
+    </div>
+    <div class="input-group">
+      <label>Account Type</label>
+      <select id="newType">
+        <option value="normal">Normal Saving UPI (Recommended Safe)</option>
+        <option value="merchant">Verified Business Merchant UPI</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" id="addUpiBtn">+ Save UPI Account</button>
+    <div class="upi-list" id="upiList"></div>
+  </div>
+</div>
+<script>
+let soundEnabled = true;
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new AudioContext();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function vibrate(pattern) {
+  if (soundEnabled && navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} }
+}
+function playTone(freq, dur, type = 'sine', vol = 0.08) {
+  if (!soundEnabled) return;
+  initAudio();
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+  osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + dur);
+}
+
+const clickFX = () => { playTone(750, 0.045, 'triangle', 0.12); vibrate(22); };
+const typeFX = () => { playTone(480 + Math.random() * 180, 0.028, 'sine', 0.06); vibrate(10); };
+const successFX = () => {
+  vibrate([30, 40, 60]);
+  playTone(523.25, 0.09, 'sine', 0.1);
+  setTimeout(() => playTone(659.25, 0.09, 'sine', 0.1), 75);
+  setTimeout(() => playTone(783.99, 0.16, 'triangle', 0.12), 150);
+};
+const errorFX = () => {
+  vibrate([70, 40, 70]);
+  playTone(160, 0.18, 'sawtooth', 0.12);
+  setTimeout(() => playTone(130, 0.22, 'sawtooth', 0.12), 120);
+};
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', () => typeFX());
+  el.addEventListener('focus', () => vibrate(12));
+});
+
+document.getElementById('soundToggle').addEventListener('click', (e) => {
+  soundEnabled = !soundEnabled;
+  e.target.textContent = soundEnabled ? '🔊' : '🔇';
+  if (soundEnabled) clickFX();
+  showToast(soundEnabled ? "Sound & Haptics ON" : "Muted");
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+let safeMode = true;
+document.getElementById('safeModeToggle').addEventListener('click', () => {
+  clickFX();
+  safeMode = !safeMode;
+  document.getElementById('safeSwitch').classList.toggle('on', safeMode);
+  showToast(safeMode ? "🛡️ Anti-Block Safe Mode ON" : "Standard Mode ON");
+});
+
+window.addQuickAmount = function(val) {
+  clickFX();
+  const inp = document.getElementById('amountInput');
+  inp.value = ((parseFloat(inp.value) || 0) + val).toFixed(2);
+};
+document.getElementById('clearAmt').addEventListener('click', () => {
+  clickFX(); document.getElementById('amountInput').value = '';
+});
+
+let upiAccounts = JSON.parse(localStorage.getItem('upi_pro_accounts')) || [
+  { name: "Demo Store", upi: "demo@okaxis", type: "normal" }
+];
+function saveAccounts() {
+  localStorage.setItem('upi_pro_accounts', JSON.stringify(upiAccounts));
+  renderUPIList(); renderDropdown();
+}
+function renderUPIList() {
+  document.getElementById('upiList').innerHTML = upiAccounts.map((acc, i) => `
+    <div class="upi-item">
+      <div class="info">${acc.name} <span>${acc.upi} • ${(acc.type || 'normal').toUpperCase()}</span></div>
+      <button class="del-btn" onclick="deleteUPI(${i})">Delete</button>
+    </div>
+  `).join('');
+}
+function renderDropdown() {
+  const select = document.getElementById('upiSelect');
+  if (upiAccounts.length === 0) { select.innerHTML = '<option value="">No UPI IDs added</option>'; return; }
+  select.innerHTML = upiAccounts.map((acc, i) => `<option value="${i}">${acc.name} (${acc.upi})</option>`).join('');
+}
+window.deleteUPI = function(index) {
+  clickFX(); upiAccounts.splice(index, 1); saveAccounts(); showToast("UPI ID Deleted");
+};
+
+document.getElementById('addUpiBtn').addEventListener('click', () => {
+  const name = document.getElementById('newName').value.trim();
+  const upi = document.getElementById('newUpi').value.trim().toLowerCase();
+  const type = document.getElementById('newType').value;
+  if (!name || !upi || !upi.includes('@')) { errorFX(); return showToast("⚠️ Valid Name ane UPI ID nakho!"); }
+  upiAccounts.push({ name, upi, type });
+  saveAccounts();
+  document.getElementById('newName').value = '';
+  document.getElementById('newUpi').value = '';
+  successFX(); showToast("✅ UPI ID Saved!");
+});
+document.getElementById('adminBtn').addEventListener('click', () => { clickFX(); document.getElementById('adminModal').classList.add('active'); });
+document.getElementById('closeAdmin').addEventListener('click', () => { clickFX(); document.getElementById('adminModal').classList.remove('active'); });
+
+let currentQRData = {};
+
+function buildAndRenderQR(isRefresh = false) {
+  const rawAmt = parseFloat(document.getElementById('amountInput').value);
+  const accIndex = document.getElementById('upiSelect').value;
+  const userNote = document.getElementById('noteInput').value.trim();
+
+  if (!rawAmt || rawAmt < 1 || isNaN(rawAmt)) { errorFX(); return showToast("⚠️ Minimum ₹1 amount nakho!"); }
+  if (accIndex === "" || !upiAccounts[accIndex]) { errorFX(); return showToast("⚠️ UPI ID select karo!"); }
+
+  const acc = upiAccounts[accIndex];
+  const token = Math.floor(1000 + Math.random() * 9000);
+  const cleanName = encodeURIComponent(acc.name);
+  const baseNote = userNote || "Pay";
+  const finalNote = encodeURIComponent(`${baseNote} #${token}`);
+
+  // Live QR URI for current view
+  let upiURI = `upi://pay?pa=${encodeURIComponent(acc.upi)}&pn=${cleanName}&am=${rawAmt.toFixed(2)}&cu=INR&tn=${finalNote}`;
+  if (!safeMode || acc.type === 'merchant') {
+    upiURI += `&tr=ORD${Date.now()}${token}&mc=0000&mode=02`;
+  }
+
+  // Smart Auto-Refreshing Template Link for Payment Gateway
+  const gatewayAutoLink = `upi://pay?pa=${encodeURIComponent(acc.upi)}&pn=${cleanName}&am=${rawAmt.toFixed(2)}&cu=INR&tn=${encodeURIComponent(baseNote)}&autorefresh=1&type=${acc.type || 'normal'}`;
+
+  currentQRData = { name: acc.name, upi: acc.upi, amount: rawAmt.toFixed(2), token, gatewayAutoLink };
+
+  document.getElementById('displayMerchant').textContent = `${acc.name} (${acc.upi})`;
+  document.getElementById('displayAmount').textContent = `₹${rawAmt.toFixed(2)}`;
+  document.getElementById('displayToken').textContent = `🛡️ Safe Token #${token} Ready`;
+  document.getElementById('autoLinkPreview').textContent = `Gateway Link: ${gatewayAutoLink}`;
+
+  const qrBox = document.getElementById('qrcode');
+  qrBox.innerHTML = '';
+  new QRCode(qrBox, { text: upiURI, width: 220, height: 220, colorDark: "#09090b", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
+
+  document.getElementById('mainCard').style.display = 'none';
+  document.getElementById('qrContainer').classList.add('active');
+  successFX();
+  if (isRefresh) showToast(`🔄 Fresh Token #${token} Generated!`);
+}
+
+document.getElementById('genBtn').addEventListener('click', () => buildAndRenderQR(false));
+document.getElementById('refreshQrBtn').addEventListener('click', () => buildAndRenderQR(true));
+
+// Copy Auto-Refreshing QR Link for Gateway
+document.getElementById('copyAutoLinkBtn').addEventListener('click', () => {
+  if (!currentQRData.gatewayAutoLink) return;
+  navigator.clipboard.writeText(currentQRData.gatewayAutoLink);
+  successFX();
+  showToast("🔗 Auto-Refresh QR Link Copied! Paste in Gateway");
+});
+
+document.getElementById('backBtn').addEventListener('click', () => {
+  clickFX();
+  document.getElementById('mainCard').style.display = 'block';
+  document.getElementById('qrContainer').classList.remove('active');
+});
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  clickFX();
+  const qrCanvas = document.querySelector('#qrcode canvas');
+  if (!qrCanvas) return;
+  const poster = document.createElement('canvas');
+  poster.width = 600; poster.height = 760;
+  const ctx = poster.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 600, 760);
+  grad.addColorStop(0, '#0f172a'); grad.addColorStop(1, '#1e1b4b');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 600, 760);
+  ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.roundRect(120, 190, 360, 360, 28); ctx.fill();
+  ctx.drawImage(qrCanvas, 150, 220, 300, 300);
+  ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.font = 'bold 34px sans-serif';
+  ctx.fillText(currentQRData.name, 300, 90);
+  ctx.fillStyle = '#38bdf8'; ctx.font = 'bold 46px sans-serif';
+  ctx.fillText(`₹${currentQRData.amount}`, 300, 150);
+  ctx.fillStyle = '#94a3b8'; ctx.font = '600 22px sans-serif';
+  ctx.fillText(`UPI: ${currentQRData.upi}`, 300, 610);
+  ctx.fillStyle = '#10b981'; ctx.font = 'bold 20px sans-serif';
+  ctx.fillText(`Scan with any UPI App • Token #${currentQRData.token}`, 300, 665);
+  const a = document.createElement('a');
+  a.href = poster.toDataURL('image/png');
+  a.download = `UPI_${currentQRData.amount}_${currentQRData.token}.png`;
+  a.click();
+  successFX(); showToast("📥 HD QR Poster Downloaded!");
+});
+
+renderUPIList();
+renderDropdown();
+</script>
+</body>
+</html>
